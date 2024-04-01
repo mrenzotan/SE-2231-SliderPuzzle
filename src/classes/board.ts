@@ -1,147 +1,148 @@
 class Board {
-  // create a board from an n-by-n array of tiles,
-  // where tiles[row][col] = tile at (row, col)
+  tiles: number[][];
+  n: number;
+
   constructor(tiles: number[][]) {
     this.tiles = tiles;
     this.n = tiles.length;
   }
 
-  // string representation of this board
   toString(): string {
-    let result = `${this.n}\n`;
-    for (let i = 0; i < this.n; i++) {
-      result += this.tiles[i].join(' ') + '\n';
-    }
-    return result;
+    return `${this.n}\n${this.tiles.map((row) => row.join(' ')).join('\n')}\n`;
   }
 
-  // board dimension n
   dimension(): number {
     return this.n;
   }
 
-  // number of tiles out of place
   hamming(): number {
-    let count = 0;
-    for (let i = 0; i < this.n; i++) {
-      for (let j = 0; j < this.n; j++) {
-        if (this.tiles[i][j] !== i * this.n + j + 1 && this.tiles[i][j] !== 0) {
-          count++;
-        }
+    return this.tiles.flat().reduce((count, tile, index) => {
+      if (tile !== 0 && tile !== index + 1) {
+        count++;
       }
-    }
-    return count;
+      return count;
+    }, 0);
   }
 
-  // sum of Manhattan distances between tiles and goal
   manhattan(): number {
-    let distance = 0;
-    for (let i = 0; i < this.n; i++) {
-      for (let j = 0; j < this.n; j++) {
-        if (this.tiles[i][j] !== 0) {
-          let value = this.tiles[i][j];
-          let goalRow = Math.floor((value - 1) / this.n);
-          let goalCol = (value - 1) % this.n;
-          distance += Math.abs(i - goalRow) + Math.abs(j - goalCol);
-        }
-      }
-    }
-    return distance;
+    return this.tiles
+      .flatMap((row, i) =>
+        row.map((tile, j) => {
+          if (tile !== 0) {
+            const goalRow = Math.floor((tile - 1) / this.n);
+            const goalCol = (tile - 1) % this.n;
+            return Math.abs(i - goalRow) + Math.abs(j - goalCol);
+          }
+          return 0;
+        })
+      )
+      .reduce((sum, distance) => sum + distance, 0);
   }
 
-  // is this board the goal board?
   isGoal(): boolean {
-    for (let i = 0; i < this.n; i++) {
-      for (let j = 0; j < this.n; j++) {
-        if (this.tiles[i][j] !== i * this.n + j + 1 && this.tiles[i][j] !== 0) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return this.tiles
+      .flat()
+      .every((tile, index) => tile === 0 || tile === index + 1);
   }
 
-  // does this board equal y?
   equals(y: Board): boolean {
-    if (this.n !== y.n) {
-      return false;
-    }
-    for (let i = 0; i < this.n; i++) {
-      for (let j = 0; j < this.n; j++) {
-        if (this.tiles[i][j] !== y.tiles[i][j]) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return (
+      this.n === y.n &&
+      this.tiles.flat().every((tile, index) => tile === y.tiles.flat()[index])
+    );
   }
 
-  // all neighboring boards
   neighbors(): Board[] {
+    const { tiles } = this;
     let neighbors: Board[] = [];
-    let blankRow = -1;
-    let blankCol = -1;
+    const [blankRow, blankCol] = this.findBlank();
 
-    // Find the position of the blank tile
-    for (let i = 0; i < this.n; i++) {
-      for (let j = 0; j < this.n; j++) {
-        if (this.tiles[i][j] === 0) {
-          blankRow = i;
-          blankCol = j;
-          break;
-        }
-      }
-    }
+    const swap = (
+      row1: number,
+      col1: number,
+      row2: number,
+      col2: number
+    ): void => {
+      const copy = tiles.map((row) => [...row]);
+      [copy[row1][col1], copy[row2][col2]] = [
+        copy[row2][col2],
+        copy[row1][col1],
+      ];
+      neighbors.push(new Board(copy));
+    };
 
-    // Generate all possible neighboring boards
-    if (blankRow > 0) {
-      let neighbor = this.swap(blankRow, blankCol, blankRow - 1, blankCol);
-      neighbors.push(neighbor);
-    }
-    if (blankRow < this.n - 1) {
-      let neighbor = this.swap(blankRow, blankCol, blankRow + 1, blankCol);
-      neighbors.push(neighbor);
-    }
-    if (blankCol > 0) {
-      let neighbor = this.swap(blankRow, blankCol, blankRow, blankCol - 1);
-      neighbors.push(neighbor);
-    }
-    if (blankCol < this.n - 1) {
-      let neighbor = this.swap(blankRow, blankCol, blankRow, blankCol + 1);
-      neighbors.push(neighbor);
-    }
+    if (blankRow > 0) swap(blankRow, blankCol, blankRow - 1, blankCol);
+    if (blankRow < this.n - 1) swap(blankRow, blankCol, blankRow + 1, blankCol);
+    if (blankCol > 0) swap(blankRow, blankCol, blankRow, blankCol - 1);
+    if (blankCol < this.n - 1) swap(blankRow, blankCol, blankRow, blankCol + 1);
 
     return neighbors;
   }
 
-  // a board that is obtained by exchanging any pair of tiles
   twin(): Board {
-    let twin = new Board(this.tiles.map((row) => [...row]));
-    let row1 = Math.floor(Math.random() * this.n);
-    let col1 = Math.floor(Math.random() * this.n);
-    let row2 = Math.floor(Math.random() * this.n);
-    let col2 = Math.floor(Math.random() * this.n);
-    while (twin.tiles[row1][col1] === 0 || twin.tiles[row2][col2] === 0) {
-      row1 = Math.floor(Math.random() * this.n);
-      col1 = Math.floor(Math.random() * this.n);
+    const { tiles } = this;
+    const [row1, col1] = [
+      Math.floor(Math.random() * this.n),
+      Math.floor(Math.random() * this.n),
+    ];
+    let [row2, col2] = [
+      Math.floor(Math.random() * this.n),
+      Math.floor(Math.random() * this.n),
+    ];
+
+    while (
+      tiles[row1][col1] === 0 ||
+      tiles[row2][col2] === 0 ||
+      tiles[row1][col1] === tiles[row2][col2]
+    ) {
       row2 = Math.floor(Math.random() * this.n);
       col2 = Math.floor(Math.random() * this.n);
     }
-    twin.swap(row1, col1, row2, col2);
-    return twin;
+
+    const copy = tiles.map((row) => [...row]);
+    [copy[row1][col1], copy[row2][col2]] = [copy[row2][col2], copy[row1][col1]];
+    return new Board(copy);
   }
 
-  private swap(row1: number, col1: number, row2: number, col2: number): Board {
-    let tiles = this.tiles.map((row) => [...row]);
-    [tiles[row1][col1], tiles[row2][col2]] = [
-      tiles[row2][col2],
-      tiles[row1][col1],
-    ];
-    return new Board(tiles);
+  isSolvable(): boolean {
+    const inversions = this.countInversions();
+    const blankRow = this.findBlank()[0];
+
+    // For odd grid sizes (n x n), if the number of inversions is even, the puzzle is solvable
+    // For even grid sizes (n x n), if the sum of the number of inversions and the row number of the blank tile is odd, the puzzle is solvable
+    return (
+      (this.n % 2 === 1 && inversions % 2 === 0) ||
+      (this.n % 2 === 0 && (inversions + blankRow) % 2 === 1)
+    );
   }
 
-  private tiles: number[][];
-  private n: number;
+  private countInversions(): number {
+    let inversions = 0;
+    const flattenTiles = this.tiles.flat();
+
+    for (let i = 0; i < flattenTiles.length; i++) {
+      if (flattenTiles[i] !== 0) {
+        for (let j = i + 1; j < flattenTiles.length; j++) {
+          if (flattenTiles[j] !== 0 && flattenTiles[i] > flattenTiles[j]) {
+            inversions++;
+          }
+        }
+      }
+    }
+
+    return inversions;
+  }
+
+  private findBlank(): [number, number] {
+    for (let i = 0; i < this.n; i++) {
+      for (let j = 0; j < this.n; j++) {
+        if (this.tiles[i][j] === 0) {
+          return [i, j];
+        }
+      }
+    }
+    return [-1, -1];
+  }
 }
 
 export default Board;

@@ -2,7 +2,6 @@ import Board from './board';
 import MinHeap from './minHeap';
 
 class Solver {
-  // find a solution to the initial board (using the A* algorithm)
   constructor(initial: Board) {
     if (initial === null) {
       throw new Error('Initial board cannot be null');
@@ -12,31 +11,18 @@ class Solver {
     this.priorityQueue = new MinHeap<SearchNode>(
       (a, b) => a.priority - b.priority
     );
-    this.initialSearchNode = new SearchNode(
-      initial,
-      0,
-      null,
-      initial.manhattan()
-    );
-    this.priorityQueue.insert(this.initialSearchNode); // Use insert method
     this.visitedBoards = new Set<string>();
-    this.visitedBoards.add(this.initialBoard.toString());
     this.solvePuzzle();
   }
 
-  // is the initial board solvable? (see below)
   isSolvable(): boolean {
-    return this.initialSearchNode.priority !== -1;
+    return this.initialSearchNode !== null;
   }
 
-  // min number of moves to solve initial board; -1 if unsolvable
   moves(): number {
-    return this.initialSearchNode.priority === -1
-      ? -1
-      : this.initialSearchNode.moves;
+    return this.initialSearchNode ? this.initialSearchNode.moves : -1;
   }
 
-  // sequence of boards in a shortest solution; null if unsolvable
   solution(): Board[] | null {
     if (!this.isSolvable()) {
       console.log('Board is unsolvable');
@@ -44,7 +30,7 @@ class Solver {
     }
 
     let solution: Board[] = [];
-    let currentNode: SearchNode | null = this.initialSearchNode;
+    let currentNode: SearchNode | null = this.initialSearchNode!;
     while (currentNode !== null) {
       solution.unshift(currentNode.board);
       currentNode = currentNode.previous;
@@ -54,12 +40,31 @@ class Solver {
 
   private initialBoard: Board;
   private priorityQueue: MinHeap<SearchNode>;
-  private initialSearchNode: SearchNode;
+  private initialSearchNode: SearchNode | null = null; // Initialize as null
   private visitedBoards: Set<string>;
 
   private solvePuzzle(): void {
+    // Inside the solvePuzzle method, before initializing initialSearchNode
+    console.log('Is initial board solvable?', this.initialBoard.isSolvable());
+
+    // If the initial board is not solvable, mark puzzle as unsolvable and return
+    if (!this.initialBoard.isSolvable()) {
+      console.log('Board is unsolvable');
+      this.initialSearchNode = null;
+      return;
+    }
+
+    this.initialSearchNode = new SearchNode(
+      this.initialBoard,
+      0,
+      null,
+      this.initialBoard.manhattan()
+    );
+    this.priorityQueue.insert(this.initialSearchNode);
+    this.visitedBoards.add(this.initialBoard.toString());
+
     while (!this.priorityQueue.isEmpty()) {
-      let currentNode = this.priorityQueue.extractMinimum(); // Use extractMinimum method
+      let currentNode = this.priorityQueue.extractMinimum();
       if (currentNode?.board.isGoal()) {
         this.initialSearchNode = currentNode;
         return;
@@ -76,23 +81,15 @@ class Solver {
               currentNode,
               neighbor.manhattan() + currentNode.moves + 1
             );
-            this.priorityQueue.insert(neighborNode); // Use insert method
+            this.priorityQueue.insert(neighborNode);
           }
         }
-      } else {
-        console.log('Current node is null, board is unsolvable');
-        this.initialSearchNode = new SearchNode(
-          this.initialBoard,
-          -1,
-          null,
-          -1
-        );
-        return;
       }
     }
 
-    console.log('Priority queue is empty, board is unsolvable');
-    this.initialSearchNode = new SearchNode(this.initialBoard, -1, null, -1);
+    // If the loop exits without finding a solution, mark puzzle as unsolvable
+    console.log('Board is unsolvable');
+    this.initialSearchNode = null;
   }
 }
 
