@@ -1,16 +1,15 @@
 import Board from './board';
-import MinHeap from './minHeap';
+import { MinHeap } from 'min-heap-typed';
 
 class Solver {
   constructor(initial: Board) {
     if (initial === null) {
       throw new Error('Initial board cannot be null');
     }
-
     this.initialBoard = initial;
-    this.priorityQueue = new MinHeap<SearchNode>(
-      (a, b) => a.priority - b.priority
-    );
+    this.priorityQueue = new MinHeap<SearchNode>([], {
+      comparator: (a, b) => a.priority - b.priority,
+    });
     this.visitedBoards = new Set<string>();
     this.solvePuzzle();
   }
@@ -28,7 +27,6 @@ class Solver {
       console.log('Board is unsolvable');
       return null;
     }
-
     let solution: Board[] = [];
     let currentNode: SearchNode | null = this.initialSearchNode!;
     while (currentNode !== null) {
@@ -44,10 +42,7 @@ class Solver {
   private visitedBoards: Set<string>;
 
   private solvePuzzle(): void {
-    // Inside the solvePuzzle method, before initializing initialSearchNode
     console.log('Is initial board solvable?', this.initialBoard.isSolvable());
-
-    // If the initial board is not solvable, mark puzzle as unsolvable and return
     if (!this.initialBoard.isSolvable()) {
       console.log('Board is unsolvable');
       this.initialSearchNode = null;
@@ -60,16 +55,15 @@ class Solver {
       null,
       this.initialBoard.manhattan()
     );
-    this.priorityQueue.insert(this.initialSearchNode);
+    this.priorityQueue.add(this.initialSearchNode);
     this.visitedBoards.add(this.initialBoard.toString());
 
     while (!this.priorityQueue.isEmpty()) {
-      let currentNode = this.priorityQueue.extractMinimum();
+      let currentNode = this.priorityQueue.poll();
       if (currentNode?.board.isGoal()) {
         this.initialSearchNode = currentNode;
         return;
       }
-
       if (currentNode) {
         for (let neighbor of currentNode.board.neighbors()) {
           let neighborString = neighbor.toString();
@@ -79,15 +73,14 @@ class Solver {
               neighbor,
               currentNode.moves + 1,
               currentNode,
-              neighbor.manhattan() + currentNode.moves + 1
+              currentNode.moves + 1 + neighbor.manhattan()
             );
-            this.priorityQueue.insert(neighborNode);
+            this.priorityQueue.add(neighborNode);
           }
         }
       }
     }
 
-    // If the loop exits without finding a solution, mark puzzle as unsolvable
     console.log('Board is unsolvable');
     this.initialSearchNode = null;
   }
