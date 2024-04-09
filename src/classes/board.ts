@@ -15,14 +15,14 @@ class Board {
     return this.n;
   }
 
-  hamming(): number {
-    return this.tiles.flat().reduce((count, tile, index) => {
-      if (tile !== 0 && tile !== index + 1) {
-        count++;
-      }
-      return count;
-    }, 0);
-  }
+  // hamming(): number {
+  //   return this.tiles.flat().reduce((count, tile, index) => {
+  //     if (tile !== 0 && tile !== index + 1) {
+  //       count++;
+  //     }
+  //     return count;
+  //   }, 0);
+  // }
 
   manhattan(): number {
     return this.tiles
@@ -79,30 +79,30 @@ class Board {
     return neighbors;
   }
 
-  twin(): Board {
-    const { tiles } = this;
-    const [row1, col1] = [
-      Math.floor(Math.random() * this.n),
-      Math.floor(Math.random() * this.n),
-    ];
-    let [row2, col2] = [
-      Math.floor(Math.random() * this.n),
-      Math.floor(Math.random() * this.n),
-    ];
+  // twin(): Board {
+  //   const { tiles } = this;
+  //   const [row1, col1] = [
+  //     Math.floor(Math.random() * this.n),
+  //     Math.floor(Math.random() * this.n),
+  //   ];
+  //   let [row2, col2] = [
+  //     Math.floor(Math.random() * this.n),
+  //     Math.floor(Math.random() * this.n),
+  //   ];
 
-    while (
-      tiles[row1][col1] === 0 ||
-      tiles[row2][col2] === 0 ||
-      tiles[row1][col1] === tiles[row2][col2]
-    ) {
-      row2 = Math.floor(Math.random() * this.n);
-      col2 = Math.floor(Math.random() * this.n);
-    }
+  //   while (
+  //     tiles[row1][col1] === 0 ||
+  //     tiles[row2][col2] === 0 ||
+  //     tiles[row1][col1] === tiles[row2][col2]
+  //   ) {
+  //     row2 = Math.floor(Math.random() * this.n);
+  //     col2 = Math.floor(Math.random() * this.n);
+  //   }
 
-    const copy = tiles.map((row) => [...row]);
-    [copy[row1][col1], copy[row2][col2]] = [copy[row2][col2], copy[row1][col1]];
-    return new Board(copy);
-  }
+  //   const copy = tiles.map((row) => [...row]);
+  //   [copy[row1][col1], copy[row2][col2]] = [copy[row2][col2], copy[row1][col1]];
+  //   return new Board(copy);
+  // }
 
   isSolvable(): boolean {
     const inversions = this.countInversions();
